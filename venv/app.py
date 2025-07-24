@@ -10,8 +10,8 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="yaswanth21",
-        database="expense_bot"
+        password="",
+        database=""
     )
 
 # Add expense to DB

@@ -15,19 +15,24 @@ def get_db_connection():
     )
 
 # Add expense to DB
-def add_expense(category, amount):
+def add_expense(user_number, category, amount):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("INSERT INTO expenses (category, amount) VALUES (%s, %s)", (category, amount))
+    cursor.execute(
+        "INSERT INTO expenses (user_number ,category, amount) VALUES (%s, %s, %s)",
+        (user_number, category, amount))
     conn.commit()
     cursor.close()
     conn.close()
 
 # Get total for a category
-def get_total(category):
+def get_total(user_number,category):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT SUM(amount) FROM expenses WHERE category = %s", (category,))
+    cursor.execute(
+        "SELECT SUM(amount) FROM expenses WHERE user_number = %s AND category = %s",
+        (user_number, category)
+    )
     result = cursor.fetchone()[0]
     cursor.close()
     conn.close()
@@ -36,7 +41,8 @@ def get_total(category):
 @app.route("/bot", methods=["POST"])
 def bot():
     incoming_msg = request.values.get("Body", "").lower().strip()
-    print(f"Received message: {incoming_msg}")  # Add this for debugging
+    user_number = request.values.get("From", "")  # Get sender's WhatsApp number
+    print(f"📩 Received message from {user_number}: {incoming_msg}")
 
     resp = MessagingResponse()
     msg = resp.message()
@@ -45,15 +51,15 @@ def bot():
     if match:
         category = match.group(1)
         amount = int(match.group(2))
-        add_expense(category, amount)
+        add_expense(user_number, category, amount)
         print(f"✅ Added {amount} to {category}.")
         msg.body(f"✅ Added {amount} to {category}.")
     elif incoming_msg.startswith("total"):
         parts = incoming_msg.split()
         if len(parts) == 2:
             category = parts[1]
-            total = get_total(category)
-            print(f"📊 Total spent on {category}: {total}")
+            total = get_total(user_number ,category)
+            print(f"📊 Total spent on {category} for {user_number}: {total}")
             msg.body(f"📊 Total spent on {category}: {total}")
         else:
             msg.body("❗ Use format: total <category>")
@@ -66,20 +72,6 @@ def bot():
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
 
-    
-# @app.route("/bot", methods=["POST"])
-# def bot():
-#     incoming_msg = request.values.get('Body', '').lower()
-#     print(f"Received message: {incoming_msg}")
-#     resp = MessagingResponse()
-#     msg = resp.message()
-
-#     if 'tea' in incoming_msg:
-#         msg.body("You ordered tea ☕️")
-#     else:
-#         msg.body("Sorry, I didn't understand that.")
-
-#     return str(resp)
 
 """if __name__ == "__main__":
     app.run(port=5000, debug=True)"""
